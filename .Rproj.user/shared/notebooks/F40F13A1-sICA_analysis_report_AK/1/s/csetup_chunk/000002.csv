@@ -1,0 +1,43 @@
+"0","knitr::opts_chunk$set(echo = TRUE)"
+"0","# load necessary packages"
+"0","library(fmsb)"
+"2","Paket ‘fmsb’ wurde unter R Version 3.4.4 erstellt"
+"0","library(glmnet)"
+"2","Paket ‘glmnet’ wurde unter R Version 3.4.4 erstellt"
+"2","Lade nötiges Paket: Matrix
+"
+"2","Lade nötiges Paket: foreach
+"
+"2","Paket ‘foreach’ wurde unter R Version 3.4.4 erstellt"
+"2","Loaded glmnet 2.0-16
+
+"
+"0","library(irr) # needed to calculate Cohen's kappa"
+"2","Paket ‘irr’ wurde unter R Version 3.4.4 erstellt"
+"2","Lade nötiges Paket: lpSolve
+"
+"0","library(pROC)"
+"2","Paket ‘pROC’ wurde unter R Version 3.4.4 erstellt"
+"2","Type 'citation(""pROC"")' for a citation.
+"
+"2","
+Attache Paket: ‘pROC’
+
+"
+"2","The following object is masked from ‘package:glmnet’:
+
+    auc
+
+"
+"2","The following object is masked from ‘package:fmsb’:
+
+    roc
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    cov, smooth, var
+
+"
+"0","library(kableExtra)"
+"2","Paket ‘kableExtra’ wurde unter R Version 3.4.4 erstellt"

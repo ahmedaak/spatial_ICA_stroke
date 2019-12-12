@@ -1,0 +1,74 @@
+# this INTERACTIVE script plots radar charts for HIC + nonHIC features 
+# using package from http://myrcodes.blogspot.de/2015/10/radarchart-fmsb-package.html
+rm(list = ls())
+library(fmsb)
+setwd("S:/AG/AG-CSB_NeuroRad2/khalila/MANUSCRIPTS/sICA_manuscript/analysis/")
+# read features
+HFE_feats <- read.csv("HFE_feats.csv", header = FALSE)
+names(HFE_feats) <- c("Delay_WB", "COV_WB", "Delay_SSStemp", "COV_SSStemp", "Delay_SSSIC", "COV_SSSIC", "F_0_0.01", "F_0.01_0.025", "F_0.025_0.05", "F_0.05_0.1", "F_0.1_0.15", "F_0.15_0.2", "VT", "Mean_Tmax","HIC")
+HFE_feats <- data.frame(HFE_feats, rownames.force = NA)
+# read class labels
+HFE_classlabels <- read.csv("HFE_classLabels.csv", header = FALSE)
+HFE_classlabels <- data.matrix(HFE_classlabels, rownames.force = NA)
+names(HFE_classlabels) <- c("Patient_No", "IC_No", "HIC")
+# remove 2x features with NaN (delay + cov with SSS-IC)
+HFE_feats <- HFE_feats[,-5]
+HFE_feats <- HFE_feats[,-5]
+# combine features with subject numbers, IC numbers, HIC Y/N (in that order)
+HFE_alldata <- cbind(HFE_feats, HFE_classlabels[,1:3])
+# turn data into a data frame
+HFE_alldata <- as.data.frame(HFE_alldata)
+HFE_alldata_norm <- data.frame()
+
+# normalize all data (each feature from 0 to 1) according to this source: http://bit.ly/2lRfxS4 
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))}
+
+for (s in unique(HFE_alldata$V1)) {
+HFE_alldata_norm_sub <- as.data.frame(lapply(HFE_alldata[HFE_alldata$V1==(s),1:12], normalize))
+HFE_alldata_norm <- rbind.data.frame(HFE_alldata_norm, HFE_alldata_norm_sub)}
+
+# get normalized data frame of features of HICs & non-HICs
+HFE_alldata_norm <- cbind(HFE_alldata_norm, HFE_classlabels[,1:3])
+HFE_alldata_norm_HIC <- HFE_alldata_norm[HFE_alldata_norm$V3==1,]
+HFE_alldata_norm_nonHIC <- HFE_alldata_norm[HFE_alldata_norm$V3==0,]
+
+# take mean of each column (feature)
+HFE_alldata_norm_HIC_mean <- colMeans(HFE_alldata_norm_HIC[,1:12], na.rm = T)
+HFE_alldata_norm_nonHIC_mean <- colMeans(HFE_alldata_norm_nonHIC[,1:12], na.rm = T)
+# take SEM of each column (feature) based on http://stackoverflow.com/questions/2676554/in-r-how-to-find-the-standard-error-of-the-mean
+HFE_alldata_norm_HIC_sem <- sapply(HFE_alldata_norm_HIC[,1:12],function(x)sqrt(var(x, na.rm = T)/length(na.omit(x))))
+HFE_alldata_norm_nonHIC_sem <- sapply(HFE_alldata_norm_nonHIC[,1:12],function(x)sqrt(var(x, na.rm = T)/length(na.omit(x))))
+# take SD of each column (feature)
+HFE_alldata_norm_HIC_sd <- apply(HFE_alldata_norm_HIC[,1:12],2,sd, na.rm = T)
+HFE_alldata_norm_nonHIC_sd <- apply(HFE_alldata_norm_nonHIC[,1:12],2,sd, na.rm = T)
+
+h <- as.numeric(readline("Do you want to plot mean + SD (1) or 95% CI (2)?"))
+
+if (h == 2) {
+# get mean +/- 95% CI of each feature
+HFE_alldata_norm_HIC_meanplus <- HFE_alldata_norm_HIC_mean+(1.96*HFE_alldata_norm_HIC_sem)
+HFE_alldata_norm_HIC_meanminus <- HFE_alldata_norm_HIC_mean-(1.96*HFE_alldata_norm_HIC_sem)
+features_HIC <- rbind(HFE_alldata_norm_HIC_meanplus, HFE_alldata_norm_HIC_mean, HFE_alldata_norm_HIC_meanminus)
+
+HFE_alldata_norm_nonHIC_meanplus <- HFE_alldata_norm_nonHIC_mean+(1.96*HFE_alldata_norm_nonHIC_sem)
+HFE_alldata_norm_nonHIC_meanminus <- HFE_alldata_norm_nonHIC_mean-(1.96*HFE_alldata_norm_nonHIC_sem)
+features_nonHIC <- rbind(HFE_alldata_norm_nonHIC_meanplus, HFE_alldata_norm_nonHIC_mean, HFE_alldata_norm_nonHIC_meanminus)
+} else {
+  # get mean +/- SD of each feature
+  HFE_alldata_norm_HIC_meanplus <- HFE_alldata_norm_HIC_mean+HFE_alldata_norm_HIC_sd
+  HFE_alldata_norm_HIC_meanminus <- HFE_alldata_norm_HIC_mean-HFE_alldata_norm_HIC_sd
+  features_HIC <- rbind(HFE_alldata_norm_HIC_meanplus, HFE_alldata_norm_HIC_mean, HFE_alldata_norm_HIC_meanminus)
+  
+  HFE_alldata_norm_nonHIC_meanplus <- HFE_alldata_norm_nonHIC_mean+HFE_alldata_norm_nonHIC_sd
+  HFE_alldata_norm_nonHIC_meanminus <- HFE_alldata_norm_nonHIC_mean-HFE_alldata_norm_nonHIC_sd
+  features_nonHIC <- rbind(HFE_alldata_norm_nonHIC_meanplus, HFE_alldata_norm_nonHIC_mean, HFE_alldata_norm_nonHIC_meanminus)
+}
+# add minimum (0) and maximum (1) rows to all features
+features_HIC <- as.data.frame(rbind(rep(1,12) , rep(0,12) , features_HIC))
+#HFE_alldata_norm_nonHIC_mean=as.data.frame(rbind(rep(1,12) , rep(0,12) , HFE_alldata_norm_nonHIC_mean))
+
+# plot both HIC and non-HIC together
+if (h == 2) {radar_title = c("Mean +/- 95% CI of normalized feature values")} else {radar_title = c("Mean +/- SD of normalized feature values")}
+feature_labels <- c("Delay (WB)","","Delay (VS)","", "0-0.01 Hz","0.01-0.025 Hz","0.025-0.05 Hz","0.05-0.1 Hz","0.1-0.15 Hz","0.15-0.2 Hz","VT occupancy", "Mean Tmax delay")
+radarchart(rbind(features_HIC, features_nonHIC), pcol = c("red", "red", "red", "blue", "blue", "blue"), plty = c(2, 1, 2, 2, 1, 2), pty = c(32, 16, 32, 32, 16, 32),  title = radar_title, plwd = c(2, 3, 2, 2, 3, 2), vlcex = 1.7, vlabels = feature_labels)

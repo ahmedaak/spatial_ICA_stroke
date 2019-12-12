@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1561127778270.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3572962828",
+    "id" : "8674BA30",
+    "lastKnownWriteTime" : 1576141541,
+    "last_content_update" : 1576141541022,
+    "path" : "S:/AG/AG-CSB_NeuroRad2/khalila/PROJECTS/sICA_2019/analysis/plot_hm.R",
+    "project_path" : "plot_hm.R",
+    "properties" : {
+        "cursorPosition" : "15,9",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 7,
+    "source_on_save" : true,
+    "source_window" : "",
+    "type" : "r_source"
+}

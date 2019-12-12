@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1559135656335.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "E02F29F1",
+    "lastKnownWriteTime" : 5292976843906638626,
+    "last_content_update" : 1559135656335,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "EB424134",
+        "caption" : "HFE_full",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=HFE_full&cache_key=EB424134",
+        "displayedObservations" : "528",
+        "environment" : "",
+        "object" : "HFE_full",
+        "preview" : "0",
+        "totalObservations" : "528",
+        "variables" : "13"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1559137121182.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "27D6A075",
+    "lastKnownWriteTime" : 1559137390,
+    "last_content_update" : 1559137389923,
+    "path" : "S:/AG/AG-CSB_NeuroRad2/khalila/MANUSCRIPTS/sICA_manuscript/analysis/radarplotting_mean.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "73,253",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 5,
+    "source_on_save" : true,
+    "source_window" : "",
+    "type" : "r_source"
+}
