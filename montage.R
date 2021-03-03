@@ -62,4 +62,4 @@ for (s in file_list[file_list$FU=="Y",]$subject) {
 }
 
 # save to disk
-dev.print(png, paste("../figures/all_figs/montage.png", sep =),width = 185, height = 212.8, units = "mm", res = 1200)
+dev.print(png, paste("../figures/all_figs/montage.png", sep =),width = 230, height = 212.8, units = "mm", res = 1200)

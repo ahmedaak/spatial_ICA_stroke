@@ -132,7 +132,7 @@ if (nrow(HFE_full_norm_HIC_sub) == 0) {
 features_all_sub <- rbind(features_HIC_sub, HFE_full_norm_nonHIC_sub)}
 
 # plot both HIC and non-HIC together
-png(filename = paste("radar_plot_", s, ".png", sep = ""), width = 900, height = 900)
+png(filename = paste(s, "_radar_plot_.png", sep = ""), width = 900, height = 900)
 radar_title = paste("Normalized feature values for subject", s)
 radarchart(features_all_sub, pcol = c(rep("red", nrow(features_HIC_sub)-2), rep("blue", nrow(HFE_full_norm_nonHIC_sub))), plwd = 2, plty = 1,  title = radar_title, vlcex = 1.5, vlabels = c("Delay to whole-brain", "Delay to sinus", "0 - 0.01 Hz", "0.01 - 0.025 Hz", "0.025 - 0.05 Hz", "0.05 - 0.1 Hz", "0.1 - 0.15 Hz", "0.15 - 0.2 Hz", "VT occupancy", "Tmax delay"))
 dev.off()
@@ -184,6 +184,7 @@ HFE_balanced_subsamp_test <- HFE_full_balanced_subsamp[-HFE_balanced_subsamp_tra
 
 # train ELASTIC NET GLM on BALANCED data
 excl_var <-  c(1,2,3, 13) # variables to EXCLUDE from model
+#excl_var <-  c(1,2,3,6,7,8,9,10,11, 13)
 
 # fit model
 # get lambda WARNING: IS "MSE" THE CORRECT LOSS FUNC TO USE HERE??? + THIS IS LOO CV
@@ -233,8 +234,10 @@ for (i in 1:50) {
   
   # define predicted classes based on threshold (t)
   test.prediction.class = real_test_predict>opt_t
-  # Assess performance in terms of accuracy (%) for training set:
-  test.accuracy <- 1-sum(xor(test.prediction.class, test.class))/nrow(real_data_feats)
+  # Assess performance in terms of BALANCED accuracy (%) for training set:
+  # this is regular accuracy, skipped
+  #test.accuracy <- 1-sum(xor(test.prediction.class, test.class))/nrow(real_data_feats)
+  test.accuracy <- (opt_sens+opt_spec)/2
   cmat = table(test.class, test.prediction.class) # confusion matrix (contingency table)
   
   # Assess performance in terms of Cohen's kappa for test set: Why? because it's insensitive to class imbalance

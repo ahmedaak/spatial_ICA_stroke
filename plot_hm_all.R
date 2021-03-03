@@ -25,11 +25,22 @@ if (s %in% subs_fn){
 {
   hm_mean_all <- c(hm_mean_all, hm_mean)
   hm_max_all <- c(hm_max_all, hm_max)
-}
+  print(paste(s, "mean FD =", hm_mean, " max FD =", hm_max))
 }
 
-# plot motion
+# plot motion trace for each subject
+png(paste("../figures/individual_figs/",s,"_motion.png",sep=""), width = 15, height = 8, units = "cm", res=600)
+par(bg="black")
+plot(seq(1,length(hm$V1),1)*2.3,hm$V1, type = "l", xlab = "Time (s)", col.lab = "white",ylab = "Displacement (mm)",xlim=c(0,350), main = "Head motion", col = "white", col.main="white")
+axis(1,col.ticks = "white",col.axis="white",col.lab="white", col="white")
+axis(2,col.ticks = "white",col.axis="white",col.lab="white", col="white")
+abline(h=0.5,lty=2,lwd=1, col="red")
+dev.off()
+}
+
+# plot motion summary
 pdf("/AG/AG-CSB_NeuroRad2/khalila/PROJECTS/sICA_2019/figures/supp_fig6/hm_fig.pdf", width = 4, height = 4)
 plot(hm_max_fn,hm_mean_fn, col = "red", log = "xy", pch = 4, xlab = "Maximum framewise displacement (mm)", ylab = "Mean framewise displacement (mm)")
 points(hm_max_all,hm_mean_all, pch = 16)
 dev.off()
+

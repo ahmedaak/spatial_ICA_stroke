@@ -1,6 +1,7 @@
 library(oro.nifti)
 library(neurobase)
 library(RColorBrewer)
+library(colorspace)
 library(png)
 
 # path to images
@@ -11,7 +12,7 @@ epi_temp <- readNIfTI("../figures/figure2/AK_103_EPI_template_brain.nii.gz")
 # define colormaps
 jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
 fire.colors <- colorRampPalette(c("#000000","#120056","#32009f","#6500d7","#8d00be","#ae0291","#c60854","#de2c23","#f25600","#fb7a00","#ff9900","#ffb700","#ffd400","#ffec33","#ffff90"))
-
+tsa.colors <- colorRampPalette(rev(c("#67001f","#b2182b","#d6604d","#f4a582","#fddbc7","black","#d1e5f0","#92c5de","#4393c3","#2166ac","#053061")))
 # read in list
 file_list <- read.csv(file = "../copying_files_progress.csv", header = T, sep = ";")
 
@@ -33,6 +34,9 @@ for (s in file_list$subject) {
   # load in Tmax
   tmax <- readNIfTI(paste(data_path, s, "Tmax_norm.nii.gz", sep = "/"))
   
+  # load in TSA
+  tsa <- readNIfTI(paste(data_path, s, "TSA_norm.nii.gz", sep = "/"))
+  
   # DWI image
   png(filename = paste("../figures/all_figs/",s,"_dwi.png",sep = ""))
   image(dwi,  z = slice, plot.type = "single") 
@@ -51,12 +55,19 @@ for (s in file_list$subject) {
   #image(tmax,  z = slice, plot.type = "single",col=jet.colors(7), zlim=c(0,200))
   dev.off()
   
+  # TSA image
+  png(filename = paste("../figures/all_figs/",s,"_tsa.png",sep = ""))
+  #image(tsa,  z = slice, plot.type = "single", col=tsa.colors(11), zlim=c(-20,20))
+  overlay(epi_temp, ifelse(tsa > 0,tsa,NA),z=slice,plot.type="single",col.y=fire.colors(7))
+  dev.off()
+  
   
   # MAKE MONTAGES
   # set up plot
   par(mar=rep(0,4))
+
   # set up layout
-  layout(matrix(1:3, ncol=3, byrow=TRUE))
+  layout(matrix(1:4, ncol=4, byrow=TRUE))
   
   # load in images
   dwi_i <- readPNG(paste("../figures/all_figs/",s,"_dwi.png",sep = ""))
@@ -78,8 +89,13 @@ for (s in file_list$subject) {
   par(bg = "black")
   plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
   rasterImage(tmax_i,0,0,1,1)
+  
+  tsa_i <- readPNG(paste("../figures/all_figs/",s,"_tsa.png",sep = ""))
+  par(bg = "black")
+  plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
+  rasterImage(tsa_i,0,0,1,1)
 
   # save to disk
-  dev.print(png, paste("../figures/all_figs/",s,"_fig.png", sep = ""),width = 1200, height = 400)
+  dev.print(png, paste("../figures/all_figs/",s,"_fig.png", sep = ""),width = 1200, height = 300)
 }
 
