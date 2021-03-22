@@ -198,6 +198,13 @@ lasso_HFE_coef <- coef.glmnet(object = lasso_HFE_crossval, s = lasso_HFE_crossva
 lasso_HFE_coef <- unname(lasso_HFE_coef, force = FALSE) # unname matrix
 lasso_HFE_coef <- as.vector(lasso_HFE_coef) # turn matrix into a vector
 
+# SAVE MODEL TRAINING RESULTS
+lambdas_all <- lasso_HFE_crossval$lambda.min
+coef_all <- lasso_HFE_coef
+names(coef_all) <- c("intercept", colnames(HFE_full[,-excl_var])) # put the variable names back
+OR_all <- exp(coef_all) # convert coefficients to odds ratios
+mse_all <- mse.min
+
 for (i in 1:50) {
   # CREATE UNBALANCED (REALISTIC) TEST DATASET + VALIDATE MODEL ON IT
     # select a sample of HICs (indices) that were NOT included in the training dataset (n=5 out of possible 15)
@@ -244,12 +251,8 @@ for (i in 1:50) {
   # Assess performance in terms of Cohen's kappa for test set: Why? because it's insensitive to class imbalance
   test_kappa <- kappa2(cbind(test.class, test.prediction.class))$value
   
-  # save all results (across iterations)
+  # save all results (across iterations) - TEST PERFORMANCE RESULTS
   auc_all <- append(auc_all, test.AUC)
-  lambdas_all <- append(lambdas_all, lasso_HFE_crossval$lambda.min)
-  coef_all <- cbind(coef_all, lasso_HFE_coef) 
-  rownames(coef_all) <- c("intercept", colnames(real_data_feats[,-excl_var])) # put the variable names back
-  OR_all <- exp(coef_all) # convert coefficients to odds ratios
   acc_all <- append(acc_all, test.accuracy)
   roc_sens_all <- cbind(roc_sens_all, test.rocurve$sensitivities)
   roc_spec_all <- cbind (roc_spec_all, test.rocurve$specificities)
@@ -257,9 +260,9 @@ for (i in 1:50) {
   opt_sens_all <- append(opt_sens_all, opt_sens)
   opt_spec_all <- append(opt_spec_all, opt_spec)
   kappa_all <- append(kappa_all, test_kappa)
-  mse_all <- append(mse_all, mse.min)}
+ }
 
-# report main results
+# report main results - TEST PERFORMANCE
 cat("**Model results - realistic (unbalanced 1:10) test dataset:**  \n")
 cat("Median performance (AUC) = ",median(auc_all),"  \n")
 cat("Median accuracy = ",median(acc_all),"  \n")
@@ -316,7 +319,7 @@ raincloud_theme
 pdf(file = "../figures/figure5/Figure5.pdf", width = 13, height = 6)
 plot_grid(roc_plot, perf_plot, labels = c("A","B"), label_size = 16, ncol = 2)
 dev.off()
-kable(rowMeans(OR_all))
+kable(OR_all)
 
 
 ```
