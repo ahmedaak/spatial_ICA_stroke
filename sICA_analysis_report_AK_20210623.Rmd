@@ -164,9 +164,11 @@ kappa_all <- c() # all Cohen's kappas
 mse_all <- c() # all MSEs
 
 
-# HBM Revision #1 - exclude follow-up scans from training + testing of prediction algorithm
+# HBM Revision #1 
+# exclude follow-up scans from training + testing of prediction algorithm
 # get follow-up dataset numbers
 FU_nums <- c(29,31,37,57,59,128,146,148,154,160,169,175,184,187)
+HFE_full_withfu <- HFE_full
 HFE_full <- HFE_full[ ! HFE_full$subject %in% FU_nums, ]
 
 # HBM Revision #1 - train prediction algorithm on FIX training data
@@ -177,31 +179,22 @@ HFE_full_test <- HFE_full[ ! HFE_full$subject %in% FIX_training_nums, ]
 
 # CREATE BALANCED DATASET + TRAIN MODEL ON IT
 # select the features of rows corresponding to HICs
-HFE_full_HIC <- HFE_full[HFE_full$HIC==1,]
+HFE_full_HIC <- HFE_full_training[HFE_full_training$HIC==1,]
 # select the features of rows corresponding to non-HICs
-HFE_full_nonHIC <- HFE_full[HFE_full$HIC==0,]
+HFE_full_nonHIC <- HFE_full_training[HFE_full_training$HIC==0,]
 # select a sample of non-HICs equal to n of HICs (indices, then features)
 HFE_full_nonHIC_subsamp_index <- sample(x = nrow(HFE_full_nonHIC), size = nrow(HFE_full_HIC), replace = FALSE)
 HFE_full_nonHIC_subsamp <- HFE_full_nonHIC[HFE_full_nonHIC_subsamp_index,]
 # combine the HICs + nonHICs features
 HFE_full_balanced_subsamp <- rbind(HFE_full_HIC, HFE_full_nonHIC_subsamp)
-# split model data into training and test
-# select 80% of data as sample size for training
-HFE_balanced_subsamp_training_n <- floor(0.8*nrow(HFE_full_balanced_subsamp))
-# find training data indices
-HFE_balanced_subsamp_training_i <-sample(seq_len(nrow(HFE_full_balanced_subsamp)),size=HFE_balanced_subsamp_training_n) 
-# select training data
-HFE_balanced_subsamp_training <- HFE_full_balanced_subsamp[HFE_balanced_subsamp_training_i,]
-# select test data
-HFE_balanced_subsamp_test <- HFE_full_balanced_subsamp[-HFE_balanced_subsamp_training_i,]
 
 # train ELASTIC NET GLM on BALANCED data
-excl_var <-  c(1,2,3, 13) # variables to EXCLUDE from model
+excl_var <-  c(1,2,3,13) # variables to EXCLUDE from model
 #excl_var <-  c(1,2,3,6,7,8,9,10,11, 13)
 
 # fit model
 # get lambda WARNING: IS "MSE" THE CORRECT LOSS FUNC TO USE HERE??? + THIS IS LOO CV
-lasso_HFE_crossval <- cv.glmnet(x = as.matrix(HFE_balanced_subsamp_training[,-excl_var]), nfolds = nrow(HFE_balanced_subsamp_training), y = as.matrix(HFE_balanced_subsamp_training[,3]), family = "binomial", alpha = 0.5, type.measure = "mse", grouped = FALSE) 
+lasso_HFE_crossval <- cv.glmnet(x = as.matrix(HFE_full_balanced_subsamp[,-excl_var]), nfolds = nrow(HFE_full_balanced_subsamp), y = as.matrix(HFE_full_balanced_subsamp[,3]), family = "binomial", alpha = 0.5, type.measure = "mse", grouped = FALSE) 
 # get the MSE corresponding to the minimum lambda according to http://bit.ly/2kW0aII
 mse.min <- lasso_HFE_crossval$cvm[lasso_HFE_crossval$lambda == lasso_HFE_crossval$lambda.min]
 # get coefficients
@@ -221,17 +214,17 @@ for (i in 1:50) {
   # CREATE UNBALANCED (REALISTIC) TEST DATASET + VALIDATE MODEL ON IT
     # select a sample of HICs (indices) that were NOT included in the training dataset (n=5 out of possible 15)
       # get all HICS in test data
-      HFE_feats_unbalanced_test_HIC <- HFE_balanced_subsamp_test[HFE_balanced_subsamp_test$HIC==1,]
-      # get sample of all HICS in test data (5 out of possible 15)
+      HFE_feats_unbalanced_test_HIC <- HFE_full_test[HFE_full_test$HIC==1,]
+      # get all non-HICS in test data
+      HFE_feats_unbalanced_test_nonHIC <- HFE_full_test[HFE_full_test$HIC==0,]
+      # get sample of all HICS in test data (5 out of possible 22)
       HFE_feats_unbalanced_test_HICsample <- sample(x = nrow(HFE_feats_unbalanced_test_HIC), size = 5, replace = FALSE)
       HFE_feats_unbalanced_test_HICsample_data <- HFE_feats_unbalanced_test_HIC[HFE_feats_unbalanced_test_HICsample,]
     # select a sample of non-HICs equal to 10*n of HICs (indices, then features) that were NOT included in training
-      HFE_feats_unbalanced_test_nonHICsample_notrain <- HFE_full_nonHIC[-HFE_full_nonHIC_subsamp_index,] # exclude data used during training
-      nonhic_feats_sampleindices_test <- sample(x = nrow(HFE_feats_unbalanced_test_nonHICsample_notrain), size = 10*length(HFE_feats_unbalanced_test_HICsample), replace = FALSE)
-      nonhic_feats_sample_test <- HFE_feats_unbalanced_test_nonHICsample_notrain[nonhic_feats_sampleindices_test,]
+      nonhic_feats_sampleindices_test <- sample(x = nrow(HFE_feats_unbalanced_test_nonHIC), size = 10*length(HFE_feats_unbalanced_test_HICsample), replace = FALSE)
+      nonhic_feats_sample_test <- HFE_feats_unbalanced_test_nonHIC[nonhic_feats_sampleindices_test,]
     # combine the HICs + nonHICs features
     real_data_feats <- rbind(HFE_feats_unbalanced_test_HICsample_data, nonhic_feats_sample_test)
-    
   # make predictions on REALISTIC TEST data
   real_test_predict <- predict(object = lasso_HFE_crossval, newx = as.matrix(real_data_feats[,-excl_var]), s = lasso_HFE_crossval$lambda.min, type = "response")
   real_test_predict <- as.vector(real_test_predict) # if I don't do this, "roc" gives weird warning to pass a vector instead of matrix (still runs tho)
@@ -328,7 +321,7 @@ ylab("Metric value") +
 ggtitle("Metrics of model performance") +
 raincloud_theme
 
-pdf(file = "../figures/figure5/Figure5.pdf", width = 13, height = 6)
+pdf(file = "../figures/figure7/Figure7.pdf", width = 13, height = 6)
 plot_grid(roc_plot, perf_plot, labels = c("A","B"), label_size = 16, ncol = 2)
 dev.off()
 kable(OR_all)
@@ -338,16 +331,18 @@ kable(OR_all)
 
 ```{r, echo= FALSE, fig.width=6, fig.height=6, fig.align='center',dpi=300, warning=F}
 # calculate mean and 95% CI for non-normalized feature values of HICs and non-HICs
-HFE_full_HIC_mean <- colMeans(HFE_full_HIC[,4:13],na.rm=T)
-HFE_full_HIC_95ci_ul <- HFE_full_HIC_mean + 1.96*(apply(HFE_full_HIC[,4:13],2,sd)/sqrt(nrow(HFE_full_HIC)))
+HFE_HIC <- HFE_full_withfu[HFE_full_withfu$HIC==1,]
+HFE_full_HIC_mean <- colMeans(HFE_HIC[,4:13],na.rm=T)
+HFE_full_HIC_95ci_ul <- HFE_full_HIC_mean + 1.96*(apply(HFE_HIC[,4:13],2,sd)/sqrt(nrow(HFE_HIC)))
 names(HFE_full_HIC_95ci_ul) <- paste(names(HFE_full_HIC_95ci_ul),"_95%CI_ul",sep="")
-HFE_full_HIC_95ci_ll <- HFE_full_HIC_mean - 1.96*(apply(HFE_full_HIC[,4:13],2,sd)/sqrt(nrow(HFE_full_HIC)))
+HFE_full_HIC_95ci_ll <- HFE_full_HIC_mean - 1.96*(apply(HFE_HIC[,4:13],2,sd)/sqrt(nrow(HFE_HIC)))
 names(HFE_full_HIC_95ci_ll) <- paste(names(HFE_full_HIC_95ci_ll),"_95%CI_ll",sep="")
 
-HFE_full_nonHIC_mean <- colMeans(HFE_full_nonHIC[,4:13],na.rm=T)
-HFE_full_nonHIC_95ci_ul <- HFE_full_nonHIC_mean + 1.96*(apply(HFE_full_nonHIC[,4:13],2,sd)/sqrt(nrow(HFE_full_nonHIC)))
+HFE_nonHIC <- HFE_full_withfu[HFE_full_withfu$HIC==0,]
+HFE_full_nonHIC_mean <- colMeans(HFE_nonHIC[,4:13],na.rm=T)
+HFE_full_nonHIC_95ci_ul <- HFE_full_nonHIC_mean + 1.96*(apply(HFE_nonHIC[,4:13],2,sd)/sqrt(nrow(HFE_nonHIC)))
 names(HFE_full_nonHIC_95ci_ul) <- paste(names(HFE_full_nonHIC_95ci_ul),"_95%CI_ul",sep="")
-HFE_full_nonHIC_95ci_ll <- HFE_full_nonHIC_mean - 1.96*(apply(HFE_full_nonHIC[,4:13],2,sd)/sqrt(nrow(HFE_full_nonHIC)))
+HFE_full_nonHIC_95ci_ll <- HFE_full_nonHIC_mean - 1.96*(apply(HFE_nonHIC[,4:13],2,sd)/sqrt(nrow(HFE_nonHIC)))
 names(HFE_full_nonHIC_95ci_ll) <- paste(names(HFE_full_nonHIC_95ci_ll),"_95%CI_ll",sep="")
 
 
@@ -359,13 +354,13 @@ print(as.data.frame(cbind(HFE_full_nonHIC_95ci_ll, HFE_full_nonHIC_mean, HFE_ful
 # Figure 2
 
 ```{r, echo= FALSE, fig.width=6, fig.height=6, fig.align='center',dpi=300, warning=F, results="asis", eval=FALSE}
-epi_temp <- readNIfTI("../figures/figure2/AK_103_EPI_template_brain.nii.gz")
-dwi_bl <- readNIfTI("../figures/figure2/147/dwi2epiWarped.nii.gz")
-dwi_fu <- readNIfTI("../figures/figure2/148/dwi2epiWarped.nii.gz")
-tmax_bl <- readNIfTI("../figures/figure2/147/Tmax_sSVD_norm.nii.gz")
-tmax_fu <- readNIfTI("../figures/figure2/148/Tmax_norm.nii.gz")
-IC_bl <- intersect(list.files("../figures/figure2/147/", pattern = "thresh_"), list.files("../figures/figure2/147/", pattern = ".nii.gz$"))
-IC_fu <- intersect(list.files("../figures/figure2/148/", pattern = "thresh_"), list.files("../figures/figure2/148/", pattern = ".nii.gz$"))
+epi_temp <- readNIfTI("../figures/figure3/AK_103_EPI_template_brain.nii.gz")
+dwi_bl <- readNIfTI("../figures/figure3/147/dwi2epiWarped.nii.gz")
+dwi_fu <- readNIfTI("../figures/figure3/148/dwi2epiWarped.nii.gz")
+tmax_bl <- readNIfTI("../figures/figure3/147/Tmax_sSVD_norm.nii.gz")
+tmax_fu <- readNIfTI("../figures/figure3/148/Tmax_norm.nii.gz")
+IC_bl <- intersect(list.files("../figures/figure3/147/", pattern = "thresh_"), list.files("../figures/figure3/147/", pattern = ".nii.gz$"))
+IC_fu <- intersect(list.files("../figures/figure3/148/", pattern = "thresh_"), list.files("../figures/figure3/148/", pattern = ".nii.gz$"))
 
 # define jet colormap
 jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
@@ -375,14 +370,14 @@ fire.colors <- colorRampPalette(c("#000000","#120056","#32009f","#6500d7","#8d00
 
 for (f in c("epi_temp", "dwi_bl", "dwi_fu", "tmax_bl", "tmax_fu")){
   # plot single slices
-  png(paste("../figures/figure2/",f,".png",sep=""))
+  png(paste("../figures/figure3/",f,".png",sep=""))
   if (f == "tmax_bl" | f == "tmax_fu"){
   image(get(f),  z = 40, plot.type = "single", zlim=c(1,130),col=jet.colors(7))} 
   else {
   image(get(f),  z = 40, plot.type = "single")}
   dev.off()
   # plot mosaics
-  png(paste("../figures/figure2/",f,"_mosaic.png",sep=""))
+  png(paste("../figures/figure3/",f,"_mosaic.png",sep=""))
   if (f == "tmax_bl" | f == "tmax_fu"){
   image(get(f), zlim=c(1,130),col=jet.colors(7))} 
   else {
@@ -392,26 +387,26 @@ for (f in c("epi_temp", "dwi_bl", "dwi_fu", "tmax_bl", "tmax_fu")){
 
 for (g in c(IC_bl)){
   # load in IC NIFTI
-  ic <- readNIfTI(paste("../figures/figure2/147/",g,sep=""))
+  ic <- readNIfTI(paste("../figures/figure3/147/",g,sep=""))
   # plot single slice
-  png(paste("../figures/figure2/147/",g,".png",sep=""))
+  png(paste("../figures/figure3/147/",g,".png",sep=""))
   overlay(epi_temp, ifelse(ic > 0, ic, NA), z = 40, plot.type = "single", col.y=jet.colors(7), zlim.y=c(0,10))
   dev.off()
   # plot mosaic
-  png(paste("../figures/figure2/147/",g,"_mosaic.png",sep=""))
+  png(paste("../figures/figure3/147/",g,"_mosaic.png",sep=""))
   overlay(epi_temp, ifelse(ic > 0, ic, NA), col.y=jet.colors(7), zlim.y=c(0,10))
   dev.off()
 }
 
 for (h in c(IC_fu)){
   # load in IC NIFTI
-  ic <- readNIfTI(paste("../figures/figure2/148/",h,sep=""))
+  ic <- readNIfTI(paste("../figures/figure3/148/",h,sep=""))
   # plot single slice
-  png(paste("../figures/figure2/148/",h,".png",sep=""))
+  png(paste("../figures/figure3/148/",h,".png",sep=""))
   overlay(epi_temp, ifelse(ic > 0, ic, NA), z = 40, plot.type = "single", col.y=fire.colors(15), zlim.y=c(0,10))
   dev.off()
   # plot mosaic
-  png(paste("../figures/figure2/148/",h,"_mosaic.png",sep=""))
+  png(paste("../figures/figure3/148/",h,"_mosaic.png",sep=""))
   overlay(epi_temp, ifelse(ic > 0, ic, NA), col.y=fire.colors(15), zlim.y=c(0,10))
   dev.off()
 }
@@ -420,7 +415,7 @@ for (h in c(IC_fu)){
 
 # Supp Figure 1
 ```{r, echo= FALSE, fig.width=6, fig.height=6, fig.align='center',dpi=300, warning=F, results="asis", eval=FALSE}
-epi_temp <- readNIfTI("../figures/figure2/AK_103_EPI_template_brain.nii.gz")
+epi_temp <- readNIfTI("../figures/figure3/AK_103_EPI_template_brain.nii.gz")
 dwi_bl <- readNIfTI("../figures/supp_fig1/28/dwi2epiWarped.nii.gz")
 dwi_fu <- readNIfTI("../figures/supp_fig1/29/dwi2epiWarped.nii.gz")
 tmax_bl <- readNIfTI("../figures/supp_fig1/28/Tmax_norm.nii.gz")
@@ -476,7 +471,7 @@ for (h in c(IC_fu)){
 
 # Supp Figure 2
 ```{r, echo= FALSE, fig.width=6, fig.height=6, fig.align='center',dpi=300, warning=F, results="asis", eval=FALSE}
-epi_temp <- readNIfTI("../figures/figure2/AK_103_EPI_template_brain.nii.gz")
+epi_temp <- readNIfTI("../figures/figure3/AK_103_EPI_template_brain.nii.gz")
 dwi_bl <- readNIfTI("../figures/supp_fig2/130/dwi2epiWarped.nii.gz")
 tmax_bl <- readNIfTI("../figures/supp_fig2/130/Tmax_norm.nii.gz")
 IC_bl <- intersect(list.files("../figures/supp_fig2/130/", pattern = "thresh_"), list.files("../figures/supp_fig2/130/", pattern = ".nii.gz$"))
